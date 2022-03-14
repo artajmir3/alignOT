@@ -23,6 +23,10 @@ def trn_rm0(map_3d,M,random_seed=None):
       coordinates of voxels in map_3d
 
   """
+  cube_length = max(map_3d.shape)
+  cube_length += cube_length%2
+  map_3d = np.pad(map_3d, ((0, cube_length - map_3d.shape[0]), (0, cube_length - map_3d.shape[1]), (0, cube_length - map_3d.shape[2])), 'minimum')
+  print(map_3d.shape)
   assert np.unique(map_3d.shape).size == 1, 'map must be cube, not non-cubic rectangular parallelepiped'
   N = map_3d.shape[0]
   assert N%2 == 0, 'N must be even'

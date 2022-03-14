@@ -1,0 +1,9 @@
+matplotlib
+mrcfile
+numpy
+pandas
+Pillow
+POT
+scipy
+seaborn
+numba

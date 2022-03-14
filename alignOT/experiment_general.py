@@ -5,20 +5,24 @@ import json
 
 
 def experiment_genral(source, dest, thresh, num_points, rotation_q, lr, reg, max_iter, num_experiments, resampling=True, output_path="results.json"):
+    print(output_path)
     diffs = []
     times = []
-    q_logs = {}
+    c_logs = []
+    q_logs = []
+    bests = []
     global x, y, z
     for i in range(num_experiments):
-#         print(i)
-        x, y, z = sample(fname, thresh, num_points)
-        xr, yr, zr = perform(rotation_q)
+        print(i)
+        x, y, z = sample(source, thresh, num_points)
+        xr, yr, zr = perform(x, y, z, rotation_q)
         if resampling:
-            x, y, z = sample(fname, thresh, num_points)
+            x, y, z = sample(dest, thresh, num_points)
         t = time.time()
-        quartenions, costs = SGD(x, y, z, xr, yr, zr, lr=lr, max_iter=max_iter, reg=reg, num_samples=1, verbose=False)
+        quartenions, costs = SGD(x, y, z, xr, yr, zr, lr=lr, max_iter=max_iter, reg=reg, num_samples=1)
         times.append(time.time() - t)
         q_logs.append(quartenions)
+        c_logs.append(costs)
         
         mini = None
         minx = costs[0]
@@ -28,18 +32,23 @@ def experiment_genral(source, dest, thresh, num_points, rotation_q, lr, reg, max
                 mini = i
         print(mini)
         print(diff_quaternions(quartenions[mini], rotation_q))
-            
+        print(times[-1])
+        
+        bests.append(mini)
         diffs.append(diff_quaternions(quartenions[mini], rotation_q))
         fig, ax = plt.subplots()
         plt.plot(costs)
         plt.show()
 
-    f = open(output_file, 'w')
+    f = open(output_path, 'w')
     f.write(json.dumps({
         'diffs': diffs,
         'times': times,
-        'q_logs': q_logs
+        'q_logs': q_logs,
+        'c_logs': c_logs,
+        'bests': bests
         }))
+    f.close()
 
 #experiment10('emd_2472.map', 98, 500, lr=0.00001, max_iter=500, reg=10, rotation_q=get_quaternion_vals(math.pi/7, 0, 0, 1),
 #           num_experiments=1)
@@ -77,7 +86,7 @@ xxx = []
 yyy = []
 zzz = []
 for i in range(len(xx)):
-    if xx[i] >= 0 and yy[i] <= 0 and zz[i] >= 0:
+    if zz[i] >= 0: #xx[i] >= 0 and yy[i] <= 0 and
         xxx.append(xx[i])
         yyy.append(yy[i])
         zzz.append(zz[i])
@@ -85,12 +94,16 @@ for i in range(len(xx)):
 for num_points in args.num_points_s:
     for i in range(len(xxx)):
         for theta in args.thetas:
+            print(num_points)
+            print(xxx[i][0])
+            print(theta)
+            print(type(theta))
             #x, y, z = sample(args.src, args.threshold, num_points)
             #xr, yr, zr = perform(x, y, z, get_quaternion_vals(theta * math.pi /180, xxx[i], yyy[i], zzz[i]))
             #x, y, z = sample(args.dest, args.threshold, args.num_points)
             #t = time.time()
-            quartenions, costs = experiment_genral(args.src, args.dest, num=num_points, thresh=args.threshold, rotation_q=get_quaternion_vals(theta * math.pi /180, xxx[i], yyy[i], zzz[i]),
-                                                   lr=args.lr, max_iter=args.max_iter, reg=args.reg, num_experiments=20, output_path=args.output + '_num=%d_%dthaxis_theta=%d.json'%(num_points, i, theta))
+            experiment_genral(args.src, args.dest, num_points=int(num_points), thresh=args.threshold, rotation_q=get_quaternion_vals(float(theta) * math.pi /180, xxx[i][0], yyy[i][0], zzz[i][0]),
+                                                   lr=args.lr, max_iter=args.max_iter, reg=args.reg, num_experiments=20, output_path=args.output + '_num=%d_%dthaxis_theta=%d.json'%(int(num_points), i, int(theta)))
             #print('Total time consumption is ' + str(time.time() - t) + ' second(s).')
 
             #print('Our best rotation quaternion is: ' + str(quartenions[-1]))
@@ -102,12 +115,3 @@ for num_points in args.num_points_s:
             #plt.plot(costs)
             #plt.show()
 
-x_fin, y_fin, z_fin = perform(x, y, z, quartenions[-1])
-
-
-fig = plt.figure()
-ax = fig.gca(projection='3d', adjustable='box')
-ax.scatter(x, y, z, c='C0',  marker='o')
-ax.scatter(xr, yr, zr, c='C1', marker='o')
-ax.scatter(x_fin, y_fin, z_fin, c='C2',  marker='o')
-plt.show()
