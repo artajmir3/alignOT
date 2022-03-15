@@ -49,8 +49,6 @@ class Term:
     
     def bunch_evaluate(self, bunch_vals):
         s = self.coef
-#         if s == 0:
-#             return 0
         for i in range(min(len(bunch_vals), len(self.exps))):
             for j in range(self.exps[i]):
                 s = np.multiply(s, bunch_vals[i])
@@ -105,21 +103,12 @@ class Polynomial:
             self.terms[tuple(term.exps)] = term
         else:
             self.terms[tuple(term.exps)].coef += term.coef
-#         self.terms.append(term)
 
     def get_terms(self):
         terms = []
         for exps in self.terms:
             terms.append(self.terms[exps])
         return terms
-        
-#     def simplify(self):
-#         t = self.terms[-1]
-#         for i in range(len(self.terms) - 1):
-#             if t.is_similar(self.terms[i]):
-#                 self.terms[i].coef += t.coef
-#                 self.terms.pop()
-#                 return
         
     def derivative(self, index):
         res = Polynomial()
@@ -216,6 +205,16 @@ b = q*p*qs
 print(b)
 
 def get_quaternion_vals(theta, ax, ay, az):
+    """
+    Compute the quaternion representation for a given rotation in angle-axis representation
+    params:
+        theta: the angle of the rotation in radians
+        ax, ay, az: three floats in a way that *ax, ay, az) shows the 3d axis of the rotation
+
+    retrun:
+        q: is a list of length 4 that has values of the corresponding quaternion
+    """
+    
     n = math.sqrt(ax**2 + ay**2 + az**2)
     return [math.cos(theta/2), math.sin(theta/2)*ax/n, math.sin(theta/2)*ay/n, math.sin(theta/2)*az/n]
 
@@ -225,6 +224,16 @@ def convert_to_poly(vals):
     
 
 def perform(x, y, z, vals):
+    """
+    Apply a given rotation on a given point cloud and generate a new point cloud
+    params:
+        x, y, z: three lists with len(x)=len(y)=len(z) in a way that (x[i], y[i], z[i]) is the 3d coordinates of the i-th point
+        vals: a list of length 4 that contains the values of the quaternion correponding the the ritation
+
+    return:
+        xr, yr, zr: three lists with len(xr)=len(yr)=len(zr) in a way that (xr[i], yr[i], zr[i]) is the 3d coordinates of the i-th point after the rotation
+    """
+    
     xr = []
     yr = []
     zr = []
@@ -292,7 +301,6 @@ def my_sinkhorn(a, b, M, reg, numItermax=5000, stopThr=1e-3, prev=None):
             K = np.empty(M.shape, dtype=M.dtype)
             np.divide(M, -reg, out=K)
             np.exp(K, out=K)
-#             break
         if cpt % 10 == 0:
             # we can speed up the process by checking for the error only all
             # the 10th iterations
@@ -397,7 +405,6 @@ def SGD(x, y, z, xr, yr, zr, lr=0.005, max_iter=100, reg=0.1, num_samples=1):
         if u is not None:
             prev = (u,v)
         T,cost,u,v = OT(xr,yr,zr,xx,yy,zz,reg=reg,prev=prev)
-#         T,cost = OT(xr,yr,zr,xx,yy,zz,reg=reg,prev=prev, method='emd')
         costs.append(cost)
         OT_time += time.time() -t
         t = time.time()
@@ -486,6 +493,20 @@ def SGD(x, y, z, xr, yr, zr, lr=0.005, max_iter=100, reg=0.1, num_samples=1):
     return quaternions, costs
             
 def sample(fname, thresh, M, invalid=False):
+    """
+    Sample a given file using a topology representing network and return sampled points
+    params:
+        fname: the name and address of the mrc file for the input map
+        thresh: the thresholding parameter, to be more robust to noise the values in the map with intensity < thresh
+                    will be changed to 0
+        M: number of point you want to sample
+
+    return:
+        x, y, z: the coordinated of the sampled points
+        x, y, z are lists so we have len(x)=len(y)=len(z)=M and
+        (x[i], y[i], z[i]) shows the 3d coordinates of the i-th point
+    """
+    
     if invalid:
         with mrcfile.open(fname, mode='r+', permissive=True) as mrc:     
             mrc.header.map = mrcfile.constants.MAP_ID
