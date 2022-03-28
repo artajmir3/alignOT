@@ -366,7 +366,7 @@ def dot(a, b):
     return s
 
     
-def SGD(x, y, z, xr, yr, zr, lr=0.005, max_iter=100, reg=0.1, num_samples=1):
+def SGD(x, y, z, xr, yr, zr, lr=0.005, max_iter=100, reg=0.1, num_samples=1, verbose=False):
     px = Quaternion(Polynomial([Term(coef=0, exps=[0,0,0,0,1,0,0,0])]), Polynomial([Term(coef=1, exps=[0,0,0,0,0,1,0,0])]), 
                 Polynomial([Term(coef=1, exps=[0,0,0,0,0,0,1,0])]), Polynomial([Term(coef=1, exps=[0,0,0,0,0,0,0,1])]))
 
@@ -391,9 +391,9 @@ def SGD(x, y, z, xr, yr, zr, lr=0.005, max_iter=100, reg=0.1, num_samples=1):
     v = None
     for i in range(max_iter):
         t = time.time()
-        if i % 10 == 9:
-            print(i)
-            print(costs[-1])
+        if verbose:
+            if i % 10 == 9:
+                print('Iteration number %d, the wasserstein deistance is %.2f'%(i, costs[-1]))
         quaternions.append([])
         for j in range(4):
             quaternions[-1].append(vals[j])
@@ -483,13 +483,13 @@ def SGD(x, y, z, xr, yr, zr, lr=0.005, max_iter=100, reg=0.1, num_samples=1):
         
         norm_grad = math.sqrt(grad[0]**2 + grad[1]**2 + grad[2]**2 + grad[3]**2)
         grad_time += time.time() -t
-            
-    print('end')
-    print('Time spended for optimal transport is:' + str(OT_time))
-    print('Time spended for computing gradient is:' + str(grad_time))
-    print('Time spended for rotating is:' + str(rotate_time))
-    print('Time spended for sampling is:' + str(sample_time))
-    print('Final cost: ' + str(costs[-1]))
+
+    if verbose:
+        print('Time spent for optimal transport is ' + str(OT_time) + ' second(s).')
+        print('Time spent for computing gradient is ' + str(grad_time) + ' second(s).')
+        print('Time spent for rotating is ' + str(rotate_time) + ' second(s).')
+        print('Time spent for sampling is ' + str(sample_time) + ' second(s).')
+        print('Final cost: ' + str(costs[-1]))
     return quaternions, costs
             
 def sample(fname, thresh, M, invalid=False):
