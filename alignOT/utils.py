@@ -11,6 +11,7 @@ import pandas as pd
 def doplt(arr): return(plt.imshow(arr,cmap='gray'))
 import trn, coords, gauss_forward_model
 import importlib
+import json
 
 
 class Term:
@@ -366,7 +367,7 @@ def dot(a, b):
     return s
 
     
-def SGD(x, y, z, xr, yr, zr, lr=0.005, max_iter=100, reg=0.1, num_samples=1, verbose=False):
+def SGD(x, y, z, xr, yr, zr, lr=0.005, max_iter=100, reg=0.1, num_samples=1, verbose=False, random_seed=None):
     px = Quaternion(Polynomial([Term(coef=0, exps=[0,0,0,0,1,0,0,0])]), Polynomial([Term(coef=1, exps=[0,0,0,0,0,1,0,0])]), 
                 Polynomial([Term(coef=1, exps=[0,0,0,0,0,0,1,0])]), Polynomial([Term(coef=1, exps=[0,0,0,0,0,0,0,1])]))
 
@@ -378,6 +379,9 @@ def SGD(x, y, z, xr, yr, zr, lr=0.005, max_iter=100, reg=0.1, num_samples=1, ver
         i_der.append(bx.i_pol.derivative(i))
         j_der.append(bx.j_pol.derivative(i))
         k_der.append(bx.k_pol.derivative(i))
+
+    if random_seed is not None:
+        random.seed(random_seed)
     
     vals = get_quaternion_vals(0, 0, 0, 1)
     quaternions = []
@@ -492,7 +496,7 @@ def SGD(x, y, z, xr, yr, zr, lr=0.005, max_iter=100, reg=0.1, num_samples=1, ver
         print('Final cost: ' + str(costs[-1]))
     return quaternions, costs
             
-def sample(fname, thresh, M, invalid=False):
+def sample(fname, thresh, M, invalid=False, random_seed=None):
     """
     Sample a given file using a topology representing network and return sampled points
     params:
@@ -521,7 +525,7 @@ def sample(fname, thresh, M, invalid=False):
     map_th = map_original.copy()
     map_th[map_th < thresh] = 0
 
-    rm0,arr_flat,arr_idx,xyz,coords_1d = trn.trn_rm0(map_th,M,random_seed=None)
+    rm0,arr_flat,arr_idx,xyz,coords_1d = trn.trn_rm0(map_th,M,random_seed=random_seed)
 
     l0 = 0.005*M # larger tightens things up (far apart areas too much to much, pulls together). smaller spreads things out
     lf = 0.5
@@ -551,5 +555,16 @@ def diff_quaternions(q1, q2):
         return 360 - deg
     else:
         return deg
+
+def save_points(fname, x, y, z):
+    f = open(fname, 'w')
+    f.write(json.dumps({'x':x, 'y':y, 'z':z}))
+    f.close()
+
+def load_points(fname):
+    f = open(fname, 'r')
+    j = json.loads(f.read())
+    f.close()
+    return j['x'], j['y'], j['z']
 
 
